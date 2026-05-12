@@ -44,10 +44,10 @@ fi
 # Add common options
 DOCKER_CMD="$DOCKER_CMD -p 18570:18570/udp"
 DOCKER_CMD="$DOCKER_CMD -p 8765:8765"
-DOCKER_CMD="$DOCKER_CMD -v ${SCRIPTPATH}/..:/home/ubuntu/roscon-25-workshop_ws/src/roscon-25-workshop"
-DOCKER_CMD="$DOCKER_CMD --name=px4-roscon-25"
-DOCKER_CMD="$DOCKER_CMD -w /home/ubuntu/roscon-25-workshop_ws"
-DOCKER_CMD="$DOCKER_CMD dronecode/roscon-25-workshop bash"
+DOCKER_CMD="$DOCKER_CMD -v ${SCRIPTPATH}/..:/home/ubuntu/ossna-26-workshop_ws/src/ossna-26-workshop"
+DOCKER_CMD="$DOCKER_CMD --name=px4-ossna-26"
+DOCKER_CMD="$DOCKER_CMD -w /home/ubuntu/ossna-26-workshop_ws"
+DOCKER_CMD="$DOCKER_CMD dronecode/ossna-26-workshop bash"
 
 # Execute the command
 eval $DOCKER_CMD
