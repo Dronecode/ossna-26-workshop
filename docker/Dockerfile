@@ -10,11 +10,15 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 # install dependencies
 RUN --mount=type=bind,source=./docker/scripts/install_deps.sh,target=/root/scripts/install_deps.sh /root/scripts/install_deps.sh
 
-# Add user
+# Add user. The ubuntu user is also added to the 'video' and 'render' groups
+# so that with `docker run --device /dev/dri:/dev/dri` it can open the host's
+# DRI device nodes for GPU rendering (Gazebo, EGL, etc.). When the host's
+# group GIDs differ from the image's, docker_run.sh additionally passes the
+# host GIDs via --group-add.
 ENV USER=ubuntu
-#TO-DO fix permission
 RUN groupadd -g 1000 ${USER} && \
-	useradd -m -u 1000 -g ${USER} ${USER}
+	useradd -m -u 1000 -g ${USER} ${USER} && \
+	usermod -a -G video,render ${USER}
 
 ########################################
 ##           BUILD OPENCV             ##
