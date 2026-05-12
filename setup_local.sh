@@ -114,32 +114,45 @@ case "$(uname -s)" in
         ARCH="$(dpkg --print-architecture)"
         ;;
     Darwin*)
-        cat >&2 <<'EOF'
-macOS is not a supported target for native install. ROS 2 Humble and Gazebo
-Harmonic do not have first-class macOS support, and the workshop assumes the
-Ubuntu 22.04 software stack throughout. Trying to reproduce it natively will
-likely fail at colcon build of the ROS 2 deps.
-
-The supported macOS path is Docker (the same image the rest of the workshop
-uses). Install one of:
-
-  brew install orbstack           # easiest; native virt, X11 fwd
-  brew install colima             # lightweight CLI alternative
-  brew install --cask docker      # Docker Desktop
-
-then run:
-
-  ./docker/docker_build.sh
-  ./docker/docker_run.sh
-
-If you absolutely must try native macOS install anyway, pass --force-macos.
-EOF
-        if [[ "${OSSNA_FORCE_MACOS:-}" != "1" ]]; then
-            exit 1
-        fi
         OS=macos
         SUDO=""
-        ARCH="amd64" # QGC AppImage isn't usable on macOS; install_qgc will write a stub
+        MACOS_VERSION="$(sw_vers -productVersion 2>/dev/null || echo unknown)"
+        ARCH="$(uname -m)"
+        cat >&2 <<EOF
+==> macOS detected (${MACOS_VERSION}, ${ARCH}).
+
+This script can attempt a native install on macOS but be aware of the
+upstream support situation (verified against current REP-2000 and Gazebo
+docs):
+
+  * ROS 2 Humble on macOS is **Tier 3** in REP-2000 — community-supported,
+    source-build only, no binaries. Build is non-trivial and slow.
+      https://docs.ros.org/en/humble/Installation/Alternatives/macOS-Development-Setup.html
+  * Gazebo Harmonic on macOS is brew-installable via the osrf/simulation
+    tap, but officially listed for Big Sur and Monterey.
+      https://gazebosim.org/docs/harmonic/install_osx/
+    macOS 15.x (Sequoia) has known OGRE build failures in the tap.
+
+If you want the path of least resistance, prefer Docker via OrbStack
+(or Colima/Lima/Docker Desktop):
+
+    brew install orbstack
+    ./docker/docker_build.sh && ./docker/docker_run.sh
+
+Otherwise, this script will install Homebrew prereqs and Gazebo Harmonic,
+build OpenCV and PX4 from source, and STUB the ROS 2 + workshop-workspace
+steps (because building ROS 2 Humble from source is a 1-2 hour separate
+process — follow the official docs after this script finishes).
+
+Continue with the partial native install? [y/N]
+EOF
+        if [[ "${OSSNA_FORCE_MACOS:-}" != "1" ]]; then
+            read -r ans
+            case "${ans,,}" in
+                y|yes) ;;
+                *) echo "Aborted. (Set OSSNA_FORCE_MACOS=1 to skip this prompt.)"; exit 1 ;;
+            esac
+        fi
         ;;
     *)
         echo "Error: unsupported OS $(uname -s)" >&2
@@ -165,52 +178,108 @@ echo "==> OS:               ${OS} ${UBUNTU_VERSION:-} ${ARCH}"
 echo "==> Workshop ws:      ${WS_DIR}"
 echo ""
 
-# ---------- 1. apt deps + ROS 2 Humble base ----------
-if ! ${SKIP_DEPS} && [ "${OS}" = "ubuntu" ]; then
-    echo "==> [1/6] Installing system packages..."
+# ---------- 1. system packages ----------
+if ! ${SKIP_DEPS}; then
+    if [ "${OS}" = "ubuntu" ]; then
+        echo "==> [1/6] Installing system packages (apt)..."
 
-    # ROS 2 Humble apt repo (the docker image starts FROM ros:humble-ros-base,
-    # which already has this set up; locally we need to add it ourselves).
-    if [ ! -f /etc/apt/sources.list.d/ros2.list ] && [ ! -f /etc/apt/sources.list.d/ros2.sources ]; then
-        ${SUDO} apt-get update -qq
-        ${SUDO} apt-get install -y -qq curl gnupg lsb-release software-properties-common
-        ${SUDO} add-apt-repository -y universe
-        ${SUDO} curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-            -o /usr/share/keyrings/ros-archive-keyring.gpg
-        echo "deb [arch=${ARCH} signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu ${UBUNTU_CODENAME} main" \
-            | ${SUDO} tee /etc/apt/sources.list.d/ros2.list > /dev/null
+        # ROS 2 Humble apt repo (the docker image starts FROM ros:humble-ros-base,
+        # which already has this set up; locally we need to add it ourselves).
+        if [ ! -f /etc/apt/sources.list.d/ros2.list ] && [ ! -f /etc/apt/sources.list.d/ros2.sources ]; then
+            ${SUDO} apt-get update -qq
+            ${SUDO} apt-get install -y -qq curl gnupg lsb-release software-properties-common
+            ${SUDO} add-apt-repository -y universe
+            ${SUDO} curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+                -o /usr/share/keyrings/ros-archive-keyring.gpg
+            echo "deb [arch=${ARCH} signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu ${UBUNTU_CODENAME} main" \
+                | ${SUDO} tee /etc/apt/sources.list.d/ros2.list > /dev/null
+        fi
+
+        ${SUDO} apt-get update
+        ${SUDO} apt-get install -y --no-install-recommends \
+            ros-humble-ros-base \
+            ros-dev-tools \
+            python3-colcon-common-extensions \
+            python3-rosdep \
+            python3-vcstool \
+            git
+
+        if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
+            ${SUDO} rosdep init || true
+        fi
+        rosdep update || true
+
+        # Now run the same apt-install pass the Dockerfile does (Gazebo Harmonic
+        # repo + workshop deps). install_deps.sh is sudo-aware.
+        SUDO="${SUDO}" "${DOCKER_SCRIPTS}/install_deps.sh"
+    elif [ "${OS}" = "macos" ]; then
+        echo "==> [1/6] Installing system packages (Homebrew)..."
+
+        if ! command -v brew >/dev/null 2>&1; then
+            echo "Error: Homebrew is required. Install it from https://brew.sh first." >&2
+            exit 1
+        fi
+
+        # Gazebo Harmonic via the official OSRF tap, plus build deps that
+        # mirror docker/scripts/install_deps.sh on the Linux side.
+        brew tap osrf/simulation
+        brew install \
+            gz-harmonic \
+            cmake \
+            eigen \
+            boost \
+            gflags \
+            pkg-config \
+            protobuf \
+            wget \
+            git \
+            python@3.11
+        # PX4's own macOS prerequisites (matches Tools/setup/macos.sh deps).
+        brew install --quiet \
+            gcc \
+            ninja \
+            ccache \
+            genromfs \
+            kconfig-language \
+            xz \
+            || true
+
+        # ROS 2 Humble on macOS is Tier 3 / source-only. We don't attempt to
+        # build it here — that would add ~1-2 hours and frequently fails on
+        # the latest macOS. Tell the user how to proceed.
+        cat <<'EOF'
+
+NOTE: macOS system deps installed. ROS 2 Humble itself is NOT installed by
+this script — on macOS it is Tier 3 in REP-2000 and must be built from
+source. After this script finishes you have two options:
+
+  (a) Easier: switch to Docker via OrbStack, run ./docker/docker_run.sh.
+  (b) Native: follow the official ROS 2 macOS source-install guide:
+        https://docs.ros.org/en/humble/Installation/Alternatives/macOS-Development-Setup.html
+      then rerun this script with --skip-deps --skip-px4 --skip-opencv
+      so it just builds the ROS 2 deps + workshop workspace.
+
+The remaining stages (OpenCV, PX4 SITL) WILL run and produce useful
+artifacts even without ROS 2 present.
+
+EOF
     fi
-
-    ${SUDO} apt-get update
-    ${SUDO} apt-get install -y --no-install-recommends \
-        ros-humble-ros-base \
-        ros-dev-tools \
-        python3-colcon-common-extensions \
-        python3-rosdep \
-        python3-vcstool \
-        git
-
-    if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
-        ${SUDO} rosdep init || true
-    fi
-    rosdep update || true
-
-    # Now run the same apt-install pass the Dockerfile does (Gazebo Harmonic
-    # repo + workshop deps). install_deps.sh is sudo-aware.
-    SUDO="${SUDO}" "${DOCKER_SCRIPTS}/install_deps.sh"
-elif ! ${SKIP_DEPS}; then
-    echo "==> [1/6] (deps step is Ubuntu-only)"
+else
+    echo "==> [1/6] (deps step skipped)"
 fi
 
-# Source ROS 2 for the rest of the script
-if [ -f /opt/ros/humble/setup.bash ]; then
-    # ROS setup.bash references unbound vars; relax nounset around it
-    set +u
-    source /opt/ros/humble/setup.bash
-    set -u
-else
-    echo "Error: /opt/ros/humble/setup.bash not found after deps install" >&2
-    exit 1
+# Source ROS 2 for the rest of the script (Ubuntu only — on macOS the user is
+# responsible for sourcing whatever ROS 2 install they built themselves).
+if [ "${OS}" = "ubuntu" ]; then
+    if [ -f /opt/ros/humble/setup.bash ]; then
+        # ROS setup.bash references unbound vars; relax nounset around it
+        set +u
+        source /opt/ros/humble/setup.bash
+        set -u
+    else
+        echo "Error: /opt/ros/humble/setup.bash not found after deps install" >&2
+        exit 1
+    fi
 fi
 
 # ---------- 2. OpenCV 4.10 ----------
@@ -229,18 +298,24 @@ fi
 
 # ---------- 3. ROS 2 deps ----------
 if ! ${SKIP_ROS_DEPS}; then
-    echo "==> [3/6] Building ROS 2 dependencies into ${PX4_ROS_WS} (~10-15 min)..."
-    PX4_ROS_WS="${PX4_ROS_WS}" \
-        "${DOCKER_SCRIPTS}/build_ros_deps.sh" \
-        "${MICRO_XRCE_DDS_AGENT_VERSION}" \
-        "${PX4_MSGS_VERSION}" \
-        "${PX4_ROS2_INTERFACE_LIB_VERSION}" \
-        "${PX4_ROS_COM_VERSION}"
+    if [ "${OS}" = "ubuntu" ]; then
+        echo "==> [3/6] Building ROS 2 dependencies into ${PX4_ROS_WS} (~10-15 min)..."
+        PX4_ROS_WS="${PX4_ROS_WS}" \
+            "${DOCKER_SCRIPTS}/build_ros_deps.sh" \
+            "${MICRO_XRCE_DDS_AGENT_VERSION}" \
+            "${PX4_MSGS_VERSION}" \
+            "${PX4_ROS2_INTERFACE_LIB_VERSION}" \
+            "${PX4_ROS_COM_VERSION}"
+    else
+        echo "==> [3/6] (skipped on macOS — needs a working ROS 2 Humble. See note above.)"
+    fi
 fi
 
 # ---------- 4. PX4 v1.16 SITL ----------
 if ! ${SKIP_PX4}; then
     echo "==> [4/6] Building PX4 ${PX4_VERSION} SITL into ${PX4_BUILD_DIR}/PX4-Autopilot (~10-15 min)..."
+    # build_px4.sh detects the platform internally and calls
+    # Tools/setup/ubuntu.sh on Linux, Tools/setup/macos.sh on macOS.
     USER="${USER}" PX4_BUILD_DIR="${PX4_BUILD_DIR}" \
         "${DOCKER_SCRIPTS}/build_px4.sh" "${PX4_VERSION}"
 
@@ -252,24 +327,51 @@ if ! ${SKIP_PX4}; then
 fi
 
 # ---------- 5. QGroundControl ----------
-if ! ${SKIP_QGC} && [ "${OS}" = "ubuntu" ]; then
-    echo "==> [5/6] Installing QGroundControl ${QGC_VERSION}..."
-    QGC_INSTALL_DIR="${QGC_INSTALL_DIR}" \
-        "${DOCKER_SCRIPTS}/install_qgc.sh" "${QGC_VERSION}" "${ARCH}"
+if ! ${SKIP_QGC}; then
+    if [ "${OS}" = "ubuntu" ]; then
+        echo "==> [5/6] Installing QGroundControl ${QGC_VERSION}..."
+        QGC_INSTALL_DIR="${QGC_INSTALL_DIR}" \
+            "${DOCKER_SCRIPTS}/install_qgc.sh" "${QGC_VERSION}" "${ARCH}"
+    else
+        # macOS: install the official QGC .dmg release. This is best-effort
+        # because the official build for macOS is itself an x86_64 image
+        # that runs under Rosetta on Apple Silicon.
+        if [ ! -d "${QGC_INSTALL_DIR}/QGroundControl.app" ]; then
+            echo "==> [5/6] Downloading QGroundControl ${QGC_VERSION} .dmg..."
+            DMG="${QGC_INSTALL_DIR}/QGroundControl-installer.dmg"
+            curl -L -o "${DMG}" \
+                "https://github.com/mavlink/qgroundcontrol/releases/download/${QGC_VERSION}/QGroundControl-installer.dmg" || \
+                { echo "QGC download failed; install manually from https://qgroundcontrol.com/downloads/"; DMG=""; }
+            if [ -n "${DMG}" ] && [ -f "${DMG}" ]; then
+                MNT="$(hdiutil attach "${DMG}" -nobrowse -quiet | tail -1 | awk '{print $NF}')"
+                if [ -d "${MNT}/QGroundControl.app" ]; then
+                    cp -R "${MNT}/QGroundControl.app" "${QGC_INSTALL_DIR}/"
+                    hdiutil detach "${MNT}" -quiet || true
+                fi
+                rm -f "${DMG}"
+            fi
+        else
+            echo "==> [5/6] QGroundControl already installed at ${QGC_INSTALL_DIR}/QGroundControl.app"
+        fi
+    fi
 fi
 
 # ---------- 6. Workshop workspace ----------
 if ! ${SKIP_WS}; then
-    echo "==> [6/6] Building the workshop workspace into ${WS_DIR}..."
-    mkdir -p "${WS_DIR}/src"
-    # Link this repo into the workspace src/ instead of copying it
-    if [ ! -e "${WS_DIR}/src/ossna-26-workshop" ]; then
-        ln -s "${REPO_ROOT}" "${WS_DIR}/src/ossna-26-workshop"
+    if [ "${OS}" = "ubuntu" ]; then
+        echo "==> [6/6] Building the workshop workspace into ${WS_DIR}..."
+        mkdir -p "${WS_DIR}/src"
+        # Link this repo into the workspace src/ instead of copying it
+        if [ ! -e "${WS_DIR}/src/ossna-26-workshop" ]; then
+            ln -s "${REPO_ROOT}" "${WS_DIR}/src/ossna-26-workshop"
+        fi
+        set +u
+        source "${PX4_ROS_WS}/install/setup.bash"
+        set -u
+        ( cd "${WS_DIR}" && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo )
+    else
+        echo "==> [6/6] (skipped on macOS — needs a working ROS 2 Humble. See note above.)"
     fi
-    set +u
-    source "${PX4_ROS_WS}/install/setup.bash"
-    set -u
-    ( cd "${WS_DIR}" && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo )
 fi
 
 cat <<EOF

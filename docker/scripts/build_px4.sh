@@ -11,7 +11,49 @@ PX4_BUILD_DIR="${PX4_BUILD_DIR:-/home/${USER}}"
 
 cd "${PX4_BUILD_DIR}/PX4-Autopilot"
 
-# Patch to allow setting parameters via env variables
+# Patch to allow setting parameters via env variables. Applied via `git apply
+# --reverse --check` first to make this idempotent on re-runs.
+if git apply --reverse --check - <<'EOF' >/dev/null 2>&1
+diff --git a/ROMFS/px4fmu_common/init.d-posix/rcS b/ROMFS/px4fmu_common/init.d-posix/rcS
+index fed292b9d1..1d34854077 100644
+--- a/ROMFS/px4fmu_common/init.d-posix/rcS
++++ b/ROMFS/px4fmu_common/init.d-posix/rcS
+@@ -126,15 +126,6 @@ then
+ 	set AUTOCNF yes
+ fi
+
+-# Allow overriding parameters via env variables: export PX4_PARAM_{name}={value}
+-env | while IFS='=' read -r line; do
+-  value=${line#*=}
+-  name=${line%%=*}
+-  case $name in
+-    "PX4_PARAM_"*) param set "${name#PX4_PARAM_}" "$value" ;;
+-  esac
+-done
+-
+ # multi-instance setup
+ # shellcheck disable=SC2154
+ param set MAV_SYS_ID $((px4_instance+1))
+@@ -239,6 +230,15 @@ then
+ 	exit 1
+ fi
+
++# Allow overriding parameters via env variables: export PX4_PARAM_{name}={value}
++env | while IFS='=' read -r line; do
++  value=${line#*=}
++  name=${line%%=*}
++  case $name in
++    "PX4_PARAM_"*) param set "${name#PX4_PARAM_}" "$value" ;;
++  esac
++done
++
+ dataman start
+
+ # only start the simulator if not in replay mode, as both control the lockstep time
+EOF
+then
+    echo "Patch already applied, skipping."
+else
 git apply - <<'EOF'
 diff --git a/ROMFS/px4fmu_common/init.d-posix/rcS b/ROMFS/px4fmu_common/init.d-posix/rcS
 index fed292b9d1..1d34854077 100644
@@ -47,11 +89,26 @@ index fed292b9d1..1d34854077 100644
 +done
 +
  dataman start
- 
+
  # only start the simulator if not in replay mode, as both control the lockstep time
 EOF
+fi
 
-./Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools
+# Platform-specific PX4 setup. Docker / Ubuntu host uses ubuntu.sh; macOS host
+# (when invoked from setup_local.sh) uses macos.sh from PX4-Autopilot itself.
+case "$(uname -s)" in
+    Linux*)
+        ./Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools
+        ;;
+    Darwin*)
+        ./Tools/setup/macos.sh
+        ;;
+    *)
+        echo "Unsupported PX4 host platform: $(uname -s)" >&2
+        exit 1
+        ;;
+esac
+
 make px4_sitl_default
 cd "${PX4_BUILD_DIR}"
 mkdir -p px4_sitl/bin
