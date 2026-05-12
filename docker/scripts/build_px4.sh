@@ -2,10 +2,14 @@
 set -eo pipefail
 
 PX4_VERSION=$1
+# Where PX4 will be cloned/built. Dockerfile leaves this as /home/${USER};
+# setup_local.sh overrides to $HOME so it works for any local username.
+PX4_BUILD_DIR="${PX4_BUILD_DIR:-/home/${USER}}"
 
-git clone  --recurse-submodules -b ${PX4_VERSION} https://github.com/PX4/PX4-Autopilot.git /home/${USER}/PX4-Autopilot
+[ -d "${PX4_BUILD_DIR}/PX4-Autopilot" ] || \
+    git clone --recurse-submodules -b ${PX4_VERSION} https://github.com/PX4/PX4-Autopilot.git "${PX4_BUILD_DIR}/PX4-Autopilot"
 
-cd /home/${USER}/PX4-Autopilot
+cd "${PX4_BUILD_DIR}/PX4-Autopilot"
 
 # Patch to allow setting parameters via env variables
 git apply - <<'EOF'
@@ -49,7 +53,7 @@ EOF
 
 ./Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools
 make px4_sitl_default
-cd ..
+cd "${PX4_BUILD_DIR}"
 mkdir -p px4_sitl/bin
 mkdir -p px4_sitl/romfs/etc
 cp -a PX4-Autopilot/build/px4_sitl_default/bin px4_sitl/

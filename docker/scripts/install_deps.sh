@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-apt-get update && \
-apt-get upgrade -y && \
-apt-get install -y --no-install-recommends \
+# SUDO is empty inside the Dockerfile (running as root); setup_local.sh sets
+# it to "sudo" so the same script works for a non-root local install.
+SUDO="${SUDO:-}"
+
+${SUDO} apt-get update && \
+${SUDO} apt-get upgrade -y && \
+${SUDO} apt-get install -y --no-install-recommends \
     curl \
     lsb-release \
     gnupg && \
-curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null && \
-apt-get update && \
-apt-get install -y --no-install-recommends \
+${SUDO} sh -c 'curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg' && \
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | ${SUDO} tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null && \
+${SUDO} apt-get update && \
+${SUDO} apt-get install -y --no-install-recommends \
     gz-harmonic \
     ros-humble-foxglove-bridge \
     bc \
@@ -37,5 +41,5 @@ apt-get install -y --no-install-recommends \
     libgflags-dev \
     python3-rospkg 
 
-rm -rf /var/lib/apt/lists/*
-apt-get clean
+${SUDO} rm -rf /var/lib/apt/lists/*
+${SUDO} apt-get clean
