@@ -85,12 +85,12 @@ WORKDIR /home/${USER}
 COPY --from=build-px4 --chown=${USER}:${USER} /home/${USER}/PX4-Autopilot/Tools/simulation/gz /home/${USER}/PX4-gazebo-models
 
 # build workshop workspace
-WORKDIR /home/${USER}/roscon-25-workshop_ws/
-COPY --chown=${USER}:${USER} . src/roscon-25-workshop
+WORKDIR /home/${USER}/ossna-26-workshop_ws/
+COPY --chown=${USER}:${USER} . src/ossna-26-workshop
 RUN source /home/${USER}/px4_ros_ws/install/setup.bash && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON
 
 WORKDIR /home/${USER}/
 COPY --from=build-px4 --chown=${USER}:${USER} /home/${USER}/px4_sitl /home/${USER}/px4_sitl
-RUN echo "source /home/$USER/roscon-25-workshop_ws/install/setup.bash" >> /home/$USER/.bashrc && \
+RUN echo "source /home/$USER/ossna-26-workshop_ws/install/setup.bash" >> /home/$USER/.bashrc && \
     echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> /home/$USER/.bashrc

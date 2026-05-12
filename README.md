@@ -1,4 +1,4 @@
-<h1 align="center">Hands-On Aerial Robotics Using PX4 and ROS 2</h1>
+<h1 align="center">Building Autonomy on PX4: A Hands-On Workshop for Embedded and Robotics Developers</h1>
 
 <p align="center">
     <strong>Fly with ROS 2. Powered by PX4</strong>
@@ -16,8 +16,8 @@ Over the course of a full-day, hands-on workshop, you'll see why PX4 powers so m
 You'll explore perception integrations, think ArUco markers and LiDAR, build high-level control routines in ROS 2, and leave with working simulation environments, example projects, and a clear path to swap out virtual drones for real hardware.
 No PX4 background is needed, just your ROS expertise, a laptop, and a spirit of discovery. Everything in this workshop is fully open source and open for you to inspect, modify, and share.
 
-This repository contains all the materials for the ROSCon 2025, Hands-On Aerial Robotics Using PX4 and ROS 2 Workshop.
-For questions regarding the workshop, please join the Dronecode Foundation Discord and post your question in the workshop-roscon-2025 channel:
+This repository contains all the materials for the OSSNA 2026, Building Autonomy on PX4: A Hands-On Workshop for Embedded and Robotics Developers.
+For questions regarding the workshop, please join the Dronecode Foundation Discord and post your question in the workshop-ossna-2026 channel:
 
 [Join the Dronecode Foundation Discord](https://chat.dronecode.org/)
 
@@ -58,8 +58,8 @@ The goal is to compare these two approaches, highlighting their differences and 
 
 For detailed instructions and exercises, refer to the following guides in this repository:
 
-- [Offboard Demo](px4_roscon_25/offboard_demo/README.md)
-- [Custom Mode Demo](px4_roscon_25/custom_mode_demo/README.md)
+- [Offboard Demo](px4_ossna_26/offboard_demo/README.md)
+- [Custom Mode Demo](px4_ossna_26/custom_mode_demo/README.md)
 
 ### Perception & Applications
 
@@ -68,14 +68,14 @@ In this section, we explore **three practical examples** of perception and contr
 1. **ArUco Marker Detection** – Detect markers using ROS 2 and PX4. No custom flight mode is required.
 2. **Teleoperation** – Ever seen a TurtleBot flying? This demo shows how to manually control a drone using a keyboard and to use a LiDAR scan for environmental awareness.
 3. **Precision Landing** – Combine ArUco detection with a **Custom Mode** to perform precision landing.
-    - **Precision Landing with Executor** – This is a follow up exercise to incorporate Precision Land in the former Custom Modes Demo, where an Executor schedules  Waypoints and Precison Land to find and land on the ArUco Marker in the maze. 
+    - **Precision Landing with Executor** – This is a follow up exercise to incorporate Precision Land in the former Custom Modes Demo, where an Executor schedules  Waypoints and Precison Land to find and land on the ArUco Marker in the maze.
 
 For more detailed instructions and exercises, refer to the following demos:
 
-- [ArUco Marker Detection](px4_roscon_25/aruco_tracker/README.md)
-- [Teleoperation](px4_roscon_25/teleop/README.md)
-- [Precision Landing](px4_roscon_25/precision_land/README.md)
-- [Precision Landing with Executor](px4_roscon_25/precision_land_executor/README.md)
+- [ArUco Marker Detection](px4_ossna_26/aruco_tracker/README.md)
+- [Teleoperation](px4_ossna_26/teleop/README.md)
+- [Precision Landing](px4_ossna_26/precision_land/README.md)
+- [Precision Landing with Executor](px4_ossna_26/precision_land_executor/README.md)
 
 ### Q&A, Resources & Hardware Show-and-Tell
 

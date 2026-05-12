@@ -28,7 +28,7 @@ Prerequisites installation instructions are available in [docs/prerequisites.md]
 Once Docker is installed you can verify the installation by pulling the latest workshop docker image:
 
 ```sh
-docker pull dronecode/roscon-25-workshop:latest
+docker pull dronecode/ossna-26-workshop:latest
 ```
 
 ## Container structure
@@ -82,9 +82,9 @@ You can use
 
 The script will:
 
-- Start the container giving it the name _px4-roscon-25_ and attach a shell to it.
+- Start the container giving it the name _px4-ossna-26_ and attach a shell to it.
 - Forward port `8765` to simplify Foxglove client connection.
-- Mount the repository in `/home/ubuntu/roscon-25-workshop_ws/src/roscon-25-workshop`
+- Mount the repository in `/home/ubuntu/ossna-26-workshop_ws/src/ossna-26-workshop`
 - Forward X11 to run GUI applications (GZ client, QGC) from inside the container.
 
 You can use also use two options:
@@ -96,7 +96,7 @@ This option also forwards port `18570` to allow external (Host) QGC connection.
 When using this method you can attach new shell to your container by running
 
 ```sh
-docker exec -it px4-roscon-25 bash
+docker exec -it px4-ossna-26 bash
 ```
 
 From now-on, all commands are assumed to be run from a terminal inside the container unless otherwise specified.
@@ -258,7 +258,7 @@ This is all you need to do to start the GZ + PX4 simulation, you can now takeoff
 With the simulation up an running, it is time to bridge ROS 2 with Gazebo and PX4.
 
 The following sections will demo the essential steps in this process.
-However, when trying the exercises you can leverage the [common launchfile](../px4_roscon_25/px4_roscon_25/README.md) which automatically sets up the required bridges.
+However, when trying the exercises you can leverage the [common launchfile](../px4_ossna_26/px4_ossna_26/README.md) which automatically sets up the required bridges.
 
 1. **Clock bridging.**  We want to leverage the GZ clock and use it to time all our ROS 2 node.
 This is accomplished by first creating an unidirectional bridge between the gz `/clock` topic and the ROS 2 one and then by commanding all ROS 2 to use the newly created `/clock` ROS 2 topic as time reference.
@@ -326,7 +326,7 @@ accelerometer_integral_dt: 4000
 
 ### Foxglove visualization
 
-You can use the [px4_tf](../px4_roscon_25/px4_tf/README.md) packages, in conjunction with `foxglove_bridge` to visualize in 3D the drone `base_link`.
+You can use the [px4_tf](../px4_ossna_26/px4_tf/README.md) packages, in conjunction with `foxglove_bridge` to visualize in 3D the drone `base_link`.
 
 The `px4_tf_publisher` node subscribes to PX4 `/fmu/out/vehicle_odometry` topic and publishes a derived transform for the `odom` frame to the `base_link` frame.
 
@@ -351,7 +351,7 @@ Launch your Foxglove client and open a connection of type _Foxglove WebSocket_ w
 To recompile the ROS 2 workspace
 
 ```sh
-cd ~/roscon-25-workshop_ws/
+cd ~/ossna-26-workshop_ws/
 source source ~/px4_ros_ws/install/setup.bash
 colcon build --symlink-install
 ```

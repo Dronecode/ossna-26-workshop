@@ -1,11 +1,11 @@
-# PX4 ROSCON 25
+# PX4 OSSNA 26
 
 This package contains a launchfile to simplify the simulations startup.
 
 To use it, run
 
 ```sh
-ros2 launch px4_roscon_25 common.launch.py
+ros2 launch px4_ossna_26 common.launch.py
 ```
 
 The launchfile will
@@ -18,7 +18,7 @@ The launchfile will
 - Start the MicroXRCEAgent agent
 
 You can use [Foxglove client](https://foxglove.dev/) to visualize the drone position and get other insights.
-The [roscon-25-workshop](../../foxglove/roscon-25-workshop.json) layout provides 3D visualization, xy-map and altitude plot.
+The [ossna-26-workshop](../../foxglove/ossna-26-workshop.json) layout provides 3D visualization, xy-map and altitude plot.
 
 Gazebo, PX4 and QGC are not automatically started by this launchfile.
 Please refer to [the setup](../../docs/setup.md) to know more on how to start them.

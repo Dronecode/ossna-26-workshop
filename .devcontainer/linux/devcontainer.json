@@ -1,6 +1,6 @@
 {
-    "name": "px4_roscon_25_linux",
-    "image": "dronecode/roscon-25-workshop:latest",
+    "name": "px4_ossna_26_linux",
+    "image": "dronecode/ossna-26-workshop:latest",
     "forwardPorts": [8765],
     "remoteEnv": {
         "DISPLAY": "${localEnv:DISPLAY}"
@@ -22,6 +22,6 @@
             }
         }
     },
-    "workspaceMount": "source=${localWorkspaceFolder},target=/home/ubuntu/roscon-25-workshop_ws/src/roscon-25-workshop,type=bind",
-    "workspaceFolder": "/home/ubuntu/roscon-25-workshop_ws"
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/ubuntu/ossna-26-workshop_ws/src/ossna-26-workshop,type=bind",
+    "workspaceFolder": "/home/ubuntu/ossna-26-workshop_ws"
 }
