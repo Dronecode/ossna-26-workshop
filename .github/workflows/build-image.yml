@@ -22,7 +22,7 @@ jobs:
             runner: x64
     runs-on: [runs-on,"runner=8cpu-linux-${{ matrix.runner }}","image=ubuntu24-full-${{ matrix.runner }}","run-id=${{ github.run_id }}",extras=s3-cache,volume=80gb]
     steps:
-      - uses: runs-on/action@v1
+      - uses: runs-on/action@v2
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -51,8 +51,8 @@ jobs:
           tags: |
             dronecode/ossna-26-workshop:latest-${{ matrix.arch }}
             dronecode/ossna-26-workshop:sha-${{ github.sha }}-${{ matrix.arch }}
-          cache-from: type=gha,version=1,scope=${{ matrix.arch }}
-          cache-to: type=gha,version=1,mode=max,scope=${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 
 
   deploy_arch_images:
@@ -63,7 +63,7 @@ jobs:
     needs: [build_arch_images]
     if: github.event_name == 'push'
     steps:
-      - uses: runs-on/action@v1
+      - uses: runs-on/action@v2
       - name: Checkout repository
         uses: actions/checkout@v4
 
