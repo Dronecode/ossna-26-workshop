@@ -366,3 +366,7 @@ A1: Make sure you're running the container with GPU support.
 
 A2: Only `./docker/docker_run.sh --nvidia` combined with NVIDIA Container Toolkit works out of the box on WSL2.
 If you don't have nvidia drivers or NVIDIA Container Toolkit installed on WSL2 you can run it headless `./docker/docker_run.sh --no-gui` or you can try removing `DOCKER_CMD="$DOCKER_CMD --device /dev/dri:/dev/dri"` from `./docker/docker_run.sh`.
+
+### T3: `libEGL warning: egl: failed to create dri2 screen` when starting Gazebo on a hybrid Intel + NVIDIA host
+
+A3: These warnings are harmless. On hybrid laptops, Mesa enumerates every `/dev/dri/renderD*` node and tries to build an EGL context on each one. The NVIDIA card cannot be driven by Mesa (it needs the proprietary driver), so EGL initialisation for that node fails and Mesa falls back to the Intel GPU. The Gazebo GUI still opens and renders correctly through Intel. If you want to use the NVIDIA card instead, install the NVIDIA Container Toolkit and run `./docker/docker_run.sh --nvidia`.

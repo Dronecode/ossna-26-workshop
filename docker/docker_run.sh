@@ -38,6 +38,15 @@ if [ "$NO_GUI" = false ]; then
         DOCKER_CMD="$DOCKER_CMD -e NVIDIA_DRIVER_CAPABILITIES=all"
     else
         DOCKER_CMD="$DOCKER_CMD --device /dev/dri:/dev/dri"
+        # /dev/dri/* on the host is mode 660, owned by host groups (typically
+        # 'video' for card* and 'render' for renderD*). The container's
+        # 'ubuntu' user is not in those groups, so EGL/Vulkan/DRI fall back
+        # with "Permission denied". Pass the host GIDs so the container user
+        # can access the GPU device nodes.
+        DRI_GIDS=$(stat -c %g /dev/dri/card* /dev/dri/renderD* 2>/dev/null | sort -u)
+        for gid in $DRI_GIDS; do
+            DOCKER_CMD="$DOCKER_CMD --group-add $gid"
+        done
     fi
 fi
 
