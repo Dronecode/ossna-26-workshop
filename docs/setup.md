@@ -194,25 +194,26 @@ docker exec -it px4-ossna-26 workshop-tmux
 
 It creates a tmux session named `ossna` with two windows:
 
-1. **`sim`** — a 2×2 grid of panes, each one labelled in its border with the role it plays:
+1. **`sim`** — five panes, each labelled in its border with the role it plays. Every long-running foreground process gets its own pane (`ros2 launch …` is foreground, so common and the example can't share one):
 
    ```text
    ┌───────────────────────────────┬───────────────────────────────┐
-   │   0: gazebo                   │   1: px4                      │
-   │                               │                               │
+   │   gazebo                      │   px4                         │
    │   (paste simulation-gazebo    │   (paste the PX4 SITL         │
    │    here)                      │    command here)              │
-   │                               │                               │
-   ├───────────────────────────────┼───────────────────────────────┤
-   │   2: ros2 (common.launch.py   │   3: qgc                      │
-   │      + example launches)      │                               │
-   │                               │   (paste                      │
-   │   (paste `ros2 launch`        │    /home/ubuntu/QGroundControl│
-   │    commands here)             │    /qgroundcontrol here)      │
+   ├───────────────────────────────┤                               │
+   │   ros2 common.launch.py       │   qgc                         │
+   │   (paste                      │   (paste                      │
+   │    `ros2 launch px4_ossna_26  │    /home/ubuntu/QGroundControl│
+   │     common.launch.py`)        │    /qgroundcontrol here)      │
+   ├───────────────────────────────┤                               │
+   │   ros2 example launch         │                               │
+   │   (paste `ros2 launch         │                               │
+   │    offboard_demo …` etc.)     │                               │
    └───────────────────────────────┴───────────────────────────────┘
    ```
 
-   Each pane is also pre-seeded with comment lines (`# ...`) showing the actual commands to paste. The shell treats those as comments and does nothing, so you can read the hint and either paste the suggested command verbatim or edit it (different `--world`, different airframe, different launchfile, etc.).
+   Each pane is also pre-seeded with comment lines (`# ...`) showing the actual commands to paste. The shell treats those as comments and does nothing, so you can read the hint and either paste the suggested command verbatim or edit it (different `--world`, different airframe, different launchfile, etc.). The QGC pane is given the bulk of the right column because its UI is what you'll be looking at most.
 2. **`scratch`** — a single empty pane for `ros2 topic echo`, `ros2 node list`, editing files with `nano` / `vim`, and anything else ad-hoc. Switch to it with `Ctrl+b n` (next window) or `Ctrl+b 1`.
 
 The launcher also enables a couple of friendlier defaults on top of stock tmux: pane titles in the border, mouse mode (click to focus, scroll wheel works), 20 000 lines of scrollback, and vi keys in copy mode. All the keybindings from Option B still work, so once you are comfortable you can split / merge panes further.

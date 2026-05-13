@@ -4,11 +4,24 @@
 #
 # Creates one named session ('ossna') with two windows:
 #
-#   sim     - 2x2 grid of panes labelled 'gazebo', 'px4', 'qgc', 'ros2'.
-#             Each pane gets a comment-only hint showing the command you
-#             would paste there. The script does not start anything for
-#             you — you still copy-paste the actual commands from the
-#             workshop docs, but now into ONE terminal window.
+#   sim     - a 5-pane layout where each of the four long-running
+#             foreground processes (gazebo / px4 / common.launch.py /
+#             example launch) gets its own pane, plus a tall pane on
+#             the right for QGroundControl.
+#
+#                 ┌─────────────┬─────────────┐
+#                 │ 0: gazebo   │ 1: px4      │
+#                 ├─────────────┤             │
+#                 │ 3: common   │ 2: qgc      │
+#                 ├─────────────┤             │
+#                 │ 4: example  │             │
+#                 └─────────────┴─────────────┘
+#
+#             Each pane is pre-seeded with comment-only hint lines
+#             showing the command you would paste there. The script
+#             does not start anything for you — you still copy-paste
+#             the actual commands from the workshop docs, but now into
+#             ONE terminal window.
 #
 #   scratch - empty pane for ad-hoc `ros2 topic echo`, `ros2 node list`,
 #             editing files with vim/nano, etc.
@@ -37,53 +50,69 @@ tmux set -g history-limit 20000
 tmux setw -g mode-keys vi
 tmux set -g status-right "ossna-26-workshop | prefix=C-b | ?=help"
 
-# Create 3 more panes (4 total), then ask tmux to arrange them as an even
-# 2x2 grid. Using `tiled` avoids hand-managing pane indices through a
-# sequence of horizontal/vertical splits.
-tmux split-window -t "${SESSION}:sim"
-tmux split-window -t "${SESSION}:sim"
-tmux split-window -t "${SESSION}:sim"
-tmux select-layout -t "${SESSION}:sim" tiled
+# Build the 5-pane layout described in the header comment. Use stable
+# pane IDs (#{pane_id}, %0/%1/...) instead of numeric pane_index because
+# tmux re-numbers pane_index in reading order whenever the layout
+# changes, which would scramble titles applied after all splits.
 
-# Title each pane by index. With `tiled` on 4 panes the layout is:
-#   0 = top-left  1 = top-right
-#   2 = bottom-left  3 = bottom-right
-tmux select-pane -t "${SESSION}:sim.0" -T "gazebo"
-tmux select-pane -t "${SESSION}:sim.1" -T "px4"
-tmux select-pane -t "${SESSION}:sim.2" -T "ros2 (common.launch.py + example launches)"
-tmux select-pane -t "${SESSION}:sim.3" -T "qgc"
+# Pane 0 is the existing pane we got from new-session.
+GZ_PANE="$(tmux display-message -p -t "${SESSION}:sim" '#{pane_id}')"
 
-# Seed each pane with hint comments. The shell sees these as no-op comments,
-# they just remind the attendee what to paste where.
-tmux send-keys -t "${SESSION}:sim.0" \
-    "# === pane 0: Gazebo ===" Enter \
+# Split horizontally → new pane on the right = px4
+PX4_PANE="$(tmux split-window -h -p 50 -t "${GZ_PANE}" -PF '#{pane_id}')"
+
+# Split the right column vertically → new pane below = qgc (taking the
+# bottom ~67% so QGC has more room than its tiny pane 1 sibling).
+QGC_PANE="$(tmux split-window -v -p 67 -t "${PX4_PANE}" -PF '#{pane_id}')"
+
+# Split the left column (gazebo) vertically → new pane below for common.
+COMMON_PANE="$(tmux split-window -v -p 67 -t "${GZ_PANE}" -PF '#{pane_id}')"
+
+# Split the common pane vertically → new pane below = example launch.
+EXAMPLE_PANE="$(tmux split-window -v -p 50 -t "${COMMON_PANE}" -PF '#{pane_id}')"
+
+# Title every pane by stable ID (titles render in the pane border
+# thanks to the `pane-border-status top` option set above).
+tmux select-pane -t "${GZ_PANE}"      -T "gazebo"
+tmux select-pane -t "${PX4_PANE}"     -T "px4"
+tmux select-pane -t "${QGC_PANE}"     -T "qgc"
+tmux select-pane -t "${COMMON_PANE}"  -T "ros2 common.launch.py"
+tmux select-pane -t "${EXAMPLE_PANE}" -T "ros2 example launch"
+
+# Seed each pane with hint comments. The shell sees these as no-op
+# comments, they just remind the attendee what to paste where.
+tmux send-keys -t "${GZ_PANE}" \
+    "# === Gazebo ===" Enter \
     "# Paste, then Enter:" Enter \
     "#   python3 /home/ubuntu/PX4-gazebo-models/simulation-gazebo \\" Enter \
     "#     --model_store /home/ubuntu/PX4-gazebo-models/ --world default" Enter
 
-tmux send-keys -t "${SESSION}:sim.1" \
-    "# === pane 1: PX4 SITL ===" Enter \
+tmux send-keys -t "${PX4_PANE}" \
+    "# === PX4 SITL ===" Enter \
     "# Wait until Gazebo is up, then paste:" Enter \
     "#   PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 \\" Enter \
     "#     PX4_PARAM_UXRCE_DDS_SYNCT=0 \\" Enter \
     "#     /home/ubuntu/px4_sitl/bin/px4 -w /home/ubuntu/px4_sitl/romfs" Enter
 
-tmux send-keys -t "${SESSION}:sim.2" \
-    "# === pane 2: ROS 2 ===" Enter \
-    "# First the workshop's common launch (XRCE-DDS agent, clock+foxglove bridges):" Enter \
-    "#   ros2 launch px4_ossna_26 common.launch.py" Enter \
-    "# Then in the SAME pane (split with Ctrl+b \" if you want to keep both running):" Enter \
+tmux send-keys -t "${QGC_PANE}" \
+    "# === QGroundControl ===" Enter \
+    "# Needs an X11-enabled container (default for ./docker/docker_run.sh)." Enter \
+    "#   /home/ubuntu/QGroundControl/qgroundcontrol" Enter
+
+tmux send-keys -t "${COMMON_PANE}" \
+    "# === common.launch.py ===" Enter \
+    "# XRCE-DDS agent, clock + foxglove bridges, robot_state_publisher, px4_tf, static TF:" Enter \
+    "#   ros2 launch px4_ossna_26 common.launch.py" Enter
+
+tmux send-keys -t "${EXAMPLE_PANE}" \
+    "# === example launch ===" Enter \
+    "# Pick ONE of these once common.launch.py is up:" Enter \
     "#   ros2 launch offboard_demo offboard_demo.launch.py" Enter \
-    "#   ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0" Enter \
     "#   ros2 launch custom_mode_demo custom_mode_demo.launch.py" Enter \
+    "#   ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0" Enter \
     "#   ros2 launch teleop teleop.launch.py" Enter \
     "#   ros2 run   precision_land precision_land --ros-args -p use_sim_time:=true" Enter \
     "#   ros2 launch precision_land_executor precision_land_executor.launch.py" Enter
-
-tmux send-keys -t "${SESSION}:sim.3" \
-    "# === pane 3: QGroundControl ===" Enter \
-    "# Needs an X11-enabled container (default for ./docker/docker_run.sh)." Enter \
-    "#   /home/ubuntu/QGroundControl/qgroundcontrol" Enter
 
 # Scratch window for inspection commands.
 tmux new-window -t "${SESSION}" -n scratch
