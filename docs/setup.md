@@ -91,7 +91,7 @@ You can use also use two options:
 
 - `--no-gui` to disable GUI in the container.
 This option also forwards port `18570` to allow external (Host) QGC connection.
-- `--nvidia` to run the container with the `nvidia` runtime (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host).
+- `--nvidia` to run the container with the `nvidia` runtime (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed and registered with Docker on the host; see `nvidia-ctk runtime configure --runtime=docker` followed by `sudo systemctl restart docker`).
 
 When using this method you can attach new shell to your container by running
 
