@@ -41,14 +41,42 @@ fi
 # server/session) work.
 tmux new-session -d -s "${SESSION}" -n sim
 
-# Friendlier defaults: per-pane titles in the border, mouse on,
-# bigger scrollback, vi-style copy mode.
+# --- Friendlier defaults ---
 tmux set -g pane-border-status top
-tmux set -g pane-border-format "  #[bold]#{pane_index}: #{pane_title}#[default]  "
 tmux set -g mouse on
 tmux set -g history-limit 20000
 tmux setw -g mode-keys vi
-tmux set -g status-right "ossna-26-workshop | prefix=C-b | ?=help"
+tmux set -g status-interval 1            # refresh status bar (and animations) every second
+
+# --- Colors: a punchy "OSSNA 26" palette on a dark background ---
+# tmux 3.2+ honours hex colours; the image ships tmux 3.2a.
+tmux set -g status-style              "bg=#1a1a2e,fg=#e0e0e0"
+tmux set -g message-style             "bg=#ffdd55,fg=#1a1a2e,bold"
+tmux set -g pane-border-style         "fg=#444466"               # dim purple-gray
+tmux set -g pane-active-border-style  "fg=#55ddff,bold"          # bright cyan for the active pane
+
+# Pane title in the border: pink dot + bold white name (visible against #1a1a2e)
+tmux set -g pane-border-format "  #[fg=#ff55dd,bold]●#[default] #[fg=#ffffff,bold]#{pane_title}#[default]  "
+
+# Window list in the status bar
+tmux setw -g window-status-style           "fg=#999999"
+tmux setw -g window-status-current-style   "fg=#ffdd55,bold,bg=#440044"
+tmux setw -g window-status-format          " #I:#W "
+tmux setw -g window-status-current-format  " #I:#W "
+
+# Flash the window name yellow when an inactive window has new output
+tmux set -g monitor-activity on
+tmux set -g visual-activity off
+tmux setw -g window-status-activity-style  "fg=#ffdd55,bold,blink"
+
+# --- Animations ---
+# status-left: rainbow "OSSNA 2026" with a single highlighted letter that
+# rotates every second (workshop-banner generates the tmux format string).
+# status-right: a braille spinner that advances every second, plus a clock.
+tmux set -g status-left-length 40
+tmux set -g status-right-length 80
+tmux set -g status-left  "#(workshop-banner) "
+tmux set -g status-right "#[fg=#55ddff,bold]#(workshop-spinner)#[default] #[fg=#999999]workshop #[fg=#bb55ff,bold]%H:%M:%S "
 
 # Build the 5-pane layout described in the header comment. Use stable
 # pane IDs (#{pane_id}, %0/%1/...) instead of numeric pane_index because

@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+# workshop-spinner: prints one frame of a 10-frame braille spinner based on
+# the current wall-clock second. Called from tmux's status-right with
+# `status-interval 1`.
+import time
+
+FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+print(FRAMES[int(time.time()) % len(FRAMES)], end="")

@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+# workshop-banner: prints a rainbow "OSSNA 2026" with a roving white-highlight
+# cell that cycles one letter per second. Designed to be called from tmux's
+# status-left with `status-interval 1`.
+
+import time
+
+text = "OSSNA 2026"
+palette = [
+    "#ff5577", "#ff9955", "#ffdd55", "#55ff77", "#55ddff",
+    "#bb55ff", "#ff55dd", "#ff5577", "#ff9955", "#ffdd55",
+]
+n = len(text)
+highlight = int(time.time()) % n
+
+parts = []
+for i, ch in enumerate(text):
+    if ch == " ":
+        parts.append(" ")
+        continue
+    color = palette[i % len(palette)]
+    if i == highlight:
+        # Inverse cell: white text on the slot's own color
+        parts.append(f"#[fg=#ffffff,bg={color},bold]{ch}#[default]")
+    else:
+        parts.append(f"#[fg={color},bold]{ch}#[default]")
+
+print("".join(parts), end="")
