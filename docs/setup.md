@@ -107,6 +107,83 @@ To use the DevContainers, simply open the workshop repo in VSCode, then type `CT
 Finally, select the devcontainer of your choice.
 VSCode will automatically reopen inside the running container.
 
+### Running several workshop commands in one window
+
+The workshop's setup steps each occupy a terminal of their own. A typical run needs at least four shells inside the container at the same time:
+
+1. Gazebo (`simulation-gazebo`) — runs in the foreground, prints physics + plugin messages.
+2. PX4 SITL (`/home/ubuntu/px4_sitl/bin/px4 …`) — runs in the foreground, prints its uORB / mavlink startup log.
+3. The workshop's _common launch_ (`ros2 launch px4_ossna_26 common.launch.py`) — starts the MicroXRCEAgent, clock bridge, foxglove bridge, etc.
+4. The example you are running for that exercise (`ros2 launch offboard_demo …`, `ros2 run precision_land …`, and so on).
+
+You _can_ open a fresh OS terminal for each of those and `docker exec -it px4-ossna-26 bash` four times, but that gets cumbersome. Two friendlier ways to do it in one window are below — pick whichever matches how you started the container.
+
+#### Option A — VSCode DevContainer integrated terminal (no extra setup)
+
+If you started the workshop with `Dev Containers: Reopen in container`, VSCode is already _attached to the running container_ and every integrated terminal it opens is a shell inside that container. You do not need `docker exec` again.
+
+1. Open the terminal panel with **Ctrl+`** (the backtick key) — or **View → Terminal**.
+2. The first tab is already inside the container, at `/home/ubuntu/ossna-26-workshop_ws`. Run your first command there (for example, start Gazebo).
+3. Click the **`+` icon** in the top-right of the terminal panel (next to the trash bin) to open a second tab. It is also inside the container.
+4. Repeat for as many shells as you need. Each tab is independent: closing one doesn't kill the others.
+5. To see two tabs side by side, click the **split icon** (the rectangle with a vertical line through it) next to `+`, or right-click a tab and pick **Split Terminal**.
+6. Switch between tabs with **`Ctrl+PageDown` / `Ctrl+PageUp`**, or click the tab list on the right.
+
+Tip: the workspace is bind-mounted, so when you edit a source file in VSCode and rebuild with `colcon build`, the new binary is immediately picked up by `ros2 run` / `ros2 launch` in the integrated terminal.
+
+#### Option B — `tmux` inside the container (works with plain `docker run`)
+
+If you started the container with `./docker/docker_run.sh` (i.e. you are not in VSCode), use `tmux` to multiplex one OS terminal into many shells. The workshop image ships with `tmux` pre-installed, so there is nothing to install.
+
+1. Attach the first terminal to the container as usual:
+
+   ```sh
+   docker exec -it px4-ossna-26 bash
+   ```
+
+2. Inside the container, start a `tmux` session:
+
+   ```sh
+   tmux
+   ```
+
+   You'll see a green status bar at the bottom — that means you are inside a `tmux` session. Every shortcut starts with the **prefix key**, which is `Ctrl+b` by default. Press the prefix, _release_ it, then press the next key.
+3. Common shortcuts (each preceded by `Ctrl+b`, then released):
+
+   | Shortcut | What it does |
+   | --- | --- |
+   | `"` | Split the current pane **horizontally** (new pane below) |
+   | `%` | Split the current pane **vertically** (new pane to the right) |
+   | `arrow keys` | Move focus between panes |
+   | `c` | Create a new full-screen **window** (different from a pane) |
+   | `n` / `p` | Next / previous window |
+   | `0`-`9` | Jump to window N |
+   | `z` | Zoom the current pane to full-screen / unzoom |
+   | `x` | Close the current pane (asks for confirmation) |
+   | `d` | **Detach** the session (it keeps running in the background) |
+   | `?` | Show the full key reference |
+
+4. A workshop-shaped layout, by hand, from a fresh `tmux`:
+
+   ```text
+   Ctrl+b "       # split horizontally   ───────────────
+   Ctrl+b %       # split the new bottom pane vertically
+   Ctrl+b arrow   # move focus
+   ```
+
+   gives you three panes — one for Gazebo on top, two stacked below for PX4 and the ROS 2 launches. Paste the relevant command into each.
+
+5. To detach and free your terminal without killing anything, press `Ctrl+b` then `d`. The simulation keeps running. To reattach later (from a new `docker exec -it px4-ossna-26 bash`):
+
+   ```sh
+   tmux attach           # or:  tmux a
+   ```
+
+   If you have more than one session, `tmux ls` lists them and `tmux attach -t <name>` picks one.
+6. To end everything cleanly: exit every shell in the session (`Ctrl+d` in each pane) or kill the whole session with `tmux kill-session`.
+
+For people who are new to `tmux`: think of it as "screen-sharing for shells" — your single terminal window becomes a tiled layout of multiple independent bash sessions, and the session survives even if you accidentally close your terminal.
+
 ### Starting the PX4-GZ simulation
 
 PX4 can directly connect to GZ using the `gz-transport` libraries.
