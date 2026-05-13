@@ -18,6 +18,8 @@ RUN --mount=type=bind,source=./docker/scripts/install_deps.sh,target=/root/scrip
 ENV USER=ubuntu
 RUN groupadd -g 1000 ${USER} && \
 	useradd -m -u 1000 -g ${USER} ${USER} && \
+	(getent group video >/dev/null || groupadd -r video) && \
+	(getent group render >/dev/null || groupadd -r render) && \
 	usermod -a -G video,render ${USER}
 
 ########################################
