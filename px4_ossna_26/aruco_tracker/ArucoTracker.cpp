@@ -111,7 +111,7 @@ void ArucoTrackerNode::image_callback(const sensor_msgs::msg::Image::SharedPtr m
 			}
 
 		} else {
-			RCLCPP_ERROR(get_logger(), "Missing camera calibration");
+			RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "Waiting for camera calibration (/camera_info)");
 		}
 
 		// Always publish image
@@ -310,7 +310,7 @@ int main(int argc, char** argv)
 // 			}
 
 // 		} else {
-// 			RCLCPP_ERROR(get_logger(), "Missing camera calibration");
+// 			RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "Waiting for camera calibration (/camera_info)");
 // 		}
 
 // 		// Always publish image
