@@ -184,6 +184,52 @@ If you started the container with `./docker/docker_run.sh` (i.e. you are not in 
 
 For people who are new to `tmux`: think of it as "screen-sharing for shells" — your single terminal window becomes a tiled layout of multiple independent bash sessions, and the session survives even if you accidentally close your terminal.
 
+#### Option C — the preconfigured workshop layout (`workshop-tmux`)
+
+If you do not want to remember tmux's split commands at all, the image ships with a small launcher script that builds the layout for you. Run it instead of plain `tmux`:
+
+```sh
+docker exec -it px4-ossna-26 workshop-tmux
+```
+
+It creates a tmux session named `ossna` with two windows:
+
+1. **`sim`** — a 2×2 grid of panes, each one labelled in its border with the role it plays:
+
+   ```text
+   ┌───────────────────────────────┬───────────────────────────────┐
+   │   0: gazebo                   │   1: px4                      │
+   │                               │                               │
+   │   (paste simulation-gazebo    │   (paste the PX4 SITL         │
+   │    here)                      │    command here)              │
+   │                               │                               │
+   ├───────────────────────────────┼───────────────────────────────┤
+   │   2: ros2 (common.launch.py   │   3: qgc                      │
+   │      + example launches)      │                               │
+   │                               │   (paste                      │
+   │   (paste `ros2 launch`        │    /home/ubuntu/QGroundControl│
+   │    commands here)             │    /qgroundcontrol here)      │
+   └───────────────────────────────┴───────────────────────────────┘
+   ```
+
+   Each pane is also pre-seeded with comment lines (`# ...`) showing the actual commands to paste. The shell treats those as comments and does nothing, so you can read the hint and either paste the suggested command verbatim or edit it (different `--world`, different airframe, different launchfile, etc.).
+2. **`scratch`** — a single empty pane for `ros2 topic echo`, `ros2 node list`, editing files with `nano` / `vim`, and anything else ad-hoc. Switch to it with `Ctrl+b n` (next window) or `Ctrl+b 1`.
+
+The launcher also enables a couple of friendlier defaults on top of stock tmux: pane titles in the border, mouse mode (click to focus, scroll wheel works), 20 000 lines of scrollback, and vi keys in copy mode. All the keybindings from Option B still work, so once you are comfortable you can split / merge panes further.
+
+Re-running `workshop-tmux` reattaches to the existing session instead of building a new one, so it is also a convenient way back in after `Ctrl+b d` (detach) or after closing your OS terminal:
+
+```sh
+docker exec -it px4-ossna-26 workshop-tmux   # builds session OR reattaches
+```
+
+To start fresh with a clean layout, kill the session first:
+
+```sh
+docker exec -it px4-ossna-26 tmux kill-session -t ossna
+docker exec -it px4-ossna-26 workshop-tmux
+```
+
 ### Starting the PX4-GZ simulation
 
 PX4 can directly connect to GZ using the `gz-transport` libraries.
