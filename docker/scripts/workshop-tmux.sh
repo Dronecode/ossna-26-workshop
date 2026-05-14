@@ -46,37 +46,50 @@ tmux set -g pane-border-status top
 tmux set -g mouse on
 tmux set -g history-limit 20000
 tmux setw -g mode-keys vi
-tmux set -g status-interval 1            # refresh status bar (and animations) every second
+tmux set -g status-interval 1                # refresh status bar (and animations) every second
+tmux set -g default-terminal "tmux-256color" # opt into 256/truecolor where supported
+tmux set -ga terminal-overrides ",xterm-256color:Tc"   # tell tmux the outer terminal is true-color
+tmux set -g pane-border-lines heavy          # thicker borders on tmux 3.2+
 
-# --- Colors: a punchy "OSSNA 26" palette on a dark background ---
-# tmux 3.2+ honours hex colours; the image ships tmux 3.2a.
-tmux set -g status-style              "bg=#1a1a2e,fg=#e0e0e0"
-tmux set -g message-style             "bg=#ffdd55,fg=#1a1a2e,bold"
-tmux set -g pane-border-style         "fg=#444466"               # dim purple-gray
-tmux set -g pane-active-border-style  "fg=#55ddff,bold"          # bright cyan for the active pane
+# --- Dracula-inspired palette (synthwave-y, dev-friendly) ---
+#   bg     #282a36   bg-dark  #13111c
+#   pink   #ff79c6   purple   #bd93f9   cyan #8be9fd
+#   green  #50fa7b   yellow   #f1fa8c   orange #ffb86c
+#   red    #ff5555   fg       #f8f8f2   comment #6272a4
+tmux set -g status-style              "bg=#13111c,fg=#f8f8f2"
+tmux set -g message-style             "bg=#ff79c6,fg=#13111c,bold"
+tmux set -g pane-border-style         "fg=#3a3a5a"               # dim border for inactive
+tmux set -g pane-active-border-style  "fg=#ff79c6,bold"          # hot pink for the active pane
 
-# Pane title in the border: pink dot + bold white name (visible against #1a1a2e)
-tmux set -g pane-border-format "  #[fg=#ff55dd,bold]●#[default] #[fg=#ffffff,bold]#{pane_title}#[default]  "
+# Pane title in the border: hex-bullets in cyan + bold pink name.
+# Active pane gets a brighter title via pane-active-border-style colour, the
+# format string itself is the same for all panes.
+tmux set -g pane-border-format " #[fg=#8be9fd,bold]⬢#[default] #[fg=#ff79c6,bold]#{pane_title}#[default] #[fg=#8be9fd,bold]⬢#[default] "
 
-# Window list in the status bar
-tmux setw -g window-status-style           "fg=#999999"
-tmux setw -g window-status-current-style   "fg=#ffdd55,bold,bg=#440044"
-tmux setw -g window-status-format          " #I:#W "
-tmux setw -g window-status-current-format  " #I:#W "
+# Window list in the status bar (powerline-ish flat segments)
+tmux setw -g window-status-style           "fg=#6272a4"
+tmux setw -g window-status-current-style   "fg=#13111c,bold,bg=#8be9fd"
+tmux setw -g window-status-format          "  #I⋅#W  "
+tmux setw -g window-status-current-format  "  #I⋅#W  "
+tmux setw -g window-status-separator       ""
 
-# Flash the window name yellow when an inactive window has new output
+# Flash window name yellow when an inactive window has new output
 tmux set -g monitor-activity on
 tmux set -g visual-activity off
-tmux setw -g window-status-activity-style  "fg=#ffdd55,bold,blink"
+tmux setw -g window-status-activity-style  "fg=#f1fa8c,bold,blink"
 
 # --- Animations ---
-# status-left: rainbow "OSSNA 2026" with a single highlighted letter that
-# rotates every second (workshop-banner generates the tmux format string).
-# status-right: a braille spinner that advances every second, plus a clock.
-tmux set -g status-left-length 40
+# status-left: synthwave title with a traveling "scanner" highlight that
+#              sweeps across the text twice per second (workshop-banner
+#              emits the tmux format string).
+# status-right: 5-bar EQ visualiser + cyan workshop label + magenta clock.
+tmux set -g status-left-length 60
 tmux set -g status-right-length 80
 tmux set -g status-left  "#(workshop-banner) "
-tmux set -g status-right "#[fg=#55ddff,bold]#(workshop-spinner)#[default] #[fg=#999999]workshop #[fg=#bb55ff,bold]%H:%M:%S "
+tmux set -g status-right "#[fg=#6272a4]┤ #(workshop-spinner) #[fg=#8be9fd,bold]workshop #[fg=#6272a4]│ #[fg=#bd93f9,bold]%H:%M:%S #[fg=#6272a4]├"
+
+# Make the prefix indicator obvious when prefix is held
+tmux set -g status-keys vi
 
 # Build the 5-pane layout described in the header comment. Use stable
 # pane IDs (#{pane_id}, %0/%1/...) instead of numeric pane_index because
@@ -110,43 +123,41 @@ tmux select-pane -t "${EXAMPLE_PANE}" -T "ros2 example launch"
 # Seed each pane with hint comments. The shell sees these as no-op
 # comments, they just remind the attendee what to paste where.
 tmux send-keys -t "${GZ_PANE}" \
-    "# === Gazebo ===" Enter \
-    "# Paste, then Enter:" Enter \
-    "#   python3 /home/ubuntu/PX4-gazebo-models/simulation-gazebo \\" Enter \
-    "#     --model_store /home/ubuntu/PX4-gazebo-models/ --world default" Enter
+    "#  ▙▟ Gazebo Harmonic ▙▟" Enter \
+    "#  Spawn the physics world. Paste:" Enter \
+    "#    python3 /home/ubuntu/PX4-gazebo-models/simulation-gazebo \\" Enter \
+    "#      --model_store /home/ubuntu/PX4-gazebo-models/ --world default" Enter
 
 tmux send-keys -t "${PX4_PANE}" \
-    "# === PX4 SITL ===" Enter \
-    "# Wait until Gazebo is up, then paste:" Enter \
-    "#   PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 \\" Enter \
-    "#     PX4_PARAM_UXRCE_DDS_SYNCT=0 \\" Enter \
-    "#     /home/ubuntu/px4_sitl/bin/px4 -w /home/ubuntu/px4_sitl/romfs" Enter
+    "#  ▙▟ PX4 v1.16 SITL ▙▟" Enter \
+    "#  Once Gazebo is up, paste (4001 = x500):" Enter \
+    "#    PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 \\" Enter \
+    "#      PX4_PARAM_UXRCE_DDS_SYNCT=0 \\" Enter \
+    "#      /home/ubuntu/px4_sitl/bin/px4 -w /home/ubuntu/px4_sitl/romfs" Enter
 
 tmux send-keys -t "${QGC_PANE}" \
-    "# === QGroundControl ===" Enter \
-    "# Needs an X11-enabled container (default for ./docker/docker_run.sh)." Enter \
-    "#   /home/ubuntu/QGroundControl/qgroundcontrol" Enter
+    "#  ▙▟ QGroundControl v5.0.8 ▙▟" Enter \
+    "#  Needs an X11-enabled container (default for ./docker/docker_run.sh)." Enter \
+    "#    /home/ubuntu/QGroundControl/qgroundcontrol" Enter
 
 tmux send-keys -t "${COMMON_PANE}" \
-    "# === common.launch.py ===" Enter \
-    "# XRCE-DDS agent, clock + foxglove bridges, robot_state_publisher, px4_tf, static TF:" Enter \
-    "#   ros2 launch px4_ossna_26 common.launch.py" Enter
+    "#  ▙▟ ROS 2 :: common.launch.py ▙▟" Enter \
+    "#  XRCE-DDS agent + clock/foxglove bridges + robot_state_publisher + px4_tf + static TF:" Enter \
+    "#    ros2 launch px4_ossna_26 common.launch.py" Enter
 
 tmux send-keys -t "${EXAMPLE_PANE}" \
-    "# === example launch ===" Enter \
-    "# Pick ONE of these once common.launch.py is up:" Enter \
-    "#   ros2 launch offboard_demo offboard_demo.launch.py" Enter \
-    "#   ros2 launch custom_mode_demo custom_mode_demo.launch.py" Enter \
-    "#   ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0" Enter \
-    "#   ros2 launch teleop teleop.launch.py" Enter \
-    "#   ros2 run   precision_land precision_land --ros-args -p use_sim_time:=true" Enter \
-    "#   ros2 launch precision_land_executor precision_land_executor.launch.py" Enter
+    "#  ▙▟ ROS 2 :: example launch ▙▟" Enter \
+    "#  Pick ONE once common.launch.py is up:" Enter \
+    "#    ros2 launch offboard_demo offboard_demo.launch.py" Enter \
+    "#    ros2 launch custom_mode_demo custom_mode_demo.launch.py" Enter \
+    "#    ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0" Enter \
+    "#    ros2 launch teleop teleop.launch.py" Enter \
+    "#    ros2 run   precision_land precision_land --ros-args -p use_sim_time:=true" Enter \
+    "#    ros2 launch precision_land_executor precision_land_executor.launch.py" Enter
 
-# Scratch window for inspection commands.
+# Scratch window: small welcome banner (Tux + tech stack + tmux cheat sheet).
 tmux new-window -t "${SESSION}" -n scratch
-tmux send-keys -t "${SESSION}:scratch" \
-    "# === scratch ===" Enter \
-    "# ros2 node list   ros2 topic list   ros2 topic echo /fmu/out/vehicle_status_v1" Enter
+tmux send-keys -t "${SESSION}:scratch" "clear; workshop-welcome 2>/dev/null || true" Enter
 
 # Focus the first pane and attach.
 tmux select-window -t "${SESSION}:sim"

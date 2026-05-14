@@ -82,13 +82,17 @@ COPY --from=dep-ros2 --chown=${USER}:${USER} /root/px4_ros_ws/install /home/${US
 # retrieve QGC
 COPY --from=qgc --chown=${USER}:${USER} /home/${USER}/QGroundControl /home/${USER}/QGroundControl
 
-# Workshop tmux launcher + its animation helpers (rainbow banner + spinner).
-# Copied into /usr/local/bin before switching to the unprivileged user so
-# they end up owned by root and exec'able by all.
+# Workshop tmux launcher + its animation / welcome helpers. Copied into
+# /usr/local/bin before switching to the unprivileged user so they end up
+# owned by root and exec'able by all.
 COPY ./docker/scripts/workshop-tmux.sh /usr/local/bin/workshop-tmux
 COPY ./docker/scripts/workshop-banner  /usr/local/bin/workshop-banner
 COPY ./docker/scripts/workshop-spinner /usr/local/bin/workshop-spinner
-RUN chmod +x /usr/local/bin/workshop-tmux /usr/local/bin/workshop-banner /usr/local/bin/workshop-spinner
+COPY ./docker/scripts/workshop-welcome /usr/local/bin/workshop-welcome
+RUN chmod +x /usr/local/bin/workshop-tmux \
+             /usr/local/bin/workshop-banner \
+             /usr/local/bin/workshop-spinner \
+             /usr/local/bin/workshop-welcome
 
 # Switch to user
 USER ${USER}

@@ -1,8 +1,27 @@
 #!/usr/bin/env python3
-# workshop-spinner: prints one frame of a 10-frame braille spinner based on
-# the current wall-clock second. Called from tmux's status-right with
-# `status-interval 1`.
-import time
+# workshop-spinner: prints a 5-bar audio-EQ visualisation that snapshots
+# itself every second. Each bar is a different phase of the same sine
+# wave, so on each tmux refresh the column heights re-arrange and it
+# looks like a small equaliser is bouncing. Designed for tmux's
+# status-right with `status-interval 1`.
+#
+# Output: 5 colored block characters, e.g. `▃▆█▄▂`.
 
-FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
-print(FRAMES[int(time.time()) % len(FRAMES)], end="")
+import time
+import math
+
+# Lower → taller block-fill glyphs (8 levels).
+LEVELS = " ▁▂▃▄▅▆▇█"
+
+# Bar colors, fading from cool to hot — gives the bars a gradient look.
+BAR_COLORS = ["#8be9fd", "#bd93f9", "#ff79c6", "#bd93f9", "#8be9fd"]
+
+t = time.time() * 3.0  # speed
+bars: list[str] = []
+for i in range(5):
+    phase = i * 0.7
+    val = (math.sin(t + phase) + 1.0) / 2.0   # normalise to [0, 1]
+    idx = int(val * (len(LEVELS) - 1))
+    bars.append(f"#[fg={BAR_COLORS[i]},bold]{LEVELS[idx]}#[default]")
+
+print("".join(bars), end="")

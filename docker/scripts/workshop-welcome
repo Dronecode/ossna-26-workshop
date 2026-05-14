@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# workshop-welcome: prints a colored Tux + tech-stack badge for the OSSNA
+# 2026 workshop. Run inside the scratch tmux window so attendees see it on
+# arrival.
+
+import sys
+
+# Dracula-inspired ANSI 256 colour indices (close matches to the hex
+# palette workshop-tmux.sh uses for tmux itself):
+PINK   = "\x1b[38;5;213m"   # ~#ff79c6
+PURPLE = "\x1b[38;5;141m"   # ~#bd93f9
+CYAN   = "\x1b[38;5;87m"    # ~#8be9fd
+GREEN  = "\x1b[38;5;156m"   # ~#50fa7b
+YELLOW = "\x1b[38;5;228m"   # ~#f1fa8c
+DIM    = "\x1b[38;5;245m"
+BOLD   = "\x1b[1m"
+RESET  = "\x1b[0m"
+SEP    = f"{DIM}::{RESET}"
+
+
+def line(s: str) -> None:
+    sys.stdout.write(s + "\n")
+
+
+line("")
+line(f"{PINK}        .--.{RESET}")
+line(f"{PINK}       |o_o |     {CYAN}{BOLD}░▒▓ OSS NA 2026 · Hands-On Aerial Robotics ▓▒░{RESET}")
+line(f"{PINK}       |:_/ |     {PURPLE}tmux session{RESET}  {SEP}  {PURPLE}ossna{RESET}  {SEP}  {PURPLE}prefix = Ctrl-b{RESET}  {SEP}  {PURPLE}? for help{RESET}")
+line(f"{PINK}      //   \\ \\    {GREEN}stack{RESET}  {SEP}  {GREEN}PX4 v1.16{RESET}  {SEP}  {GREEN}ROS 2 Humble{RESET}  {SEP}  {GREEN}Gazebo Harmonic{RESET}  {SEP}  {GREEN}QGC v5.0.8{RESET}")
+line(f"{PINK}     (|     | )   {YELLOW}scratch{RESET}  {SEP}  {YELLOW}use this window for ros2 topic echo / node list / vim / nano{RESET}")
+line(f"{PINK}    /'\\_   _/`\\{RESET}")
+line(f"{PINK}    \\___)=(___/{RESET}")
+line("")
+line(f"  {DIM}┌─ tmux quick reference ─────────────────────────────────────────────────────{RESET}")
+line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b 0{RESET} / {CYAN}Ctrl-b 1{RESET}   switch to window 0 (sim) / 1 (scratch)")
+line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b n{RESET} / {CYAN}Ctrl-b p{RESET}   next / previous window")
+line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b arrow{RESET}          move focus between panes")
+line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b z{RESET}              zoom the current pane to full screen (toggle)")
+line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b \"{RESET}  /  {CYAN}Ctrl-b %{RESET}  split horizontally / vertically")
+line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b d{RESET}              detach (sim keeps running); reattach with `workshop-tmux`")
+line(f"  {DIM}└─────────────────────────────────────────────────────────────────────────────{RESET}")
+line("")
