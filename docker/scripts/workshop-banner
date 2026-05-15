@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+# workshop-banner: prints a synthwave-y status-left banner with a traveling
+# white-hot "scanner" that sweeps through the title every half second. Called
+# from tmux's status-left with `status-interval 1`. The scanner advances two
+# columns per tick so it visibly moves at the 1 Hz refresh rate.
+
+import time
+
+# The visible title: chunky shaded gradient on either side of the words.
+# All characters render fine in a stock terminal; no Nerd Font required.
+TITLE = "░▒▓ OSS NA ◆ 26 ▓▒░"
+
+# Dracula-ish palette, biased toward pink/purple/cyan for the OSS vibe.
+PEAK = "#f8f8f2"   # white-hot
+HOT  = "#ff79c6"   # pink
+WARM = "#bd93f9"   # purple
+COOL = "#8be9fd"   # cyan
+DIM  = "#6272a4"   # muted comment-grey
+
+n = len(TITLE)
+# Advance by 2 columns every tmux tick (status-interval 1 -> 2 cols/sec).
+pos = (int(time.time()) * 2) % n
+
+def style_for(distance: int) -> str:
+    if distance == 0:
+        return f"#[fg={PEAK},bg={HOT},bold]"
+    if distance == 1:
+        return f"#[fg={HOT},bold]"
+    if distance == 2:
+        return f"#[fg={WARM},bold]"
+    if distance == 3:
+        return f"#[fg={COOL}]"
+    return f"#[fg={DIM}]"
+
+parts: list[str] = []
+for i, ch in enumerate(TITLE):
+    if ch == " ":
+        parts.append(" ")
+        continue
+    d = min((i - pos) % n, (pos - i) % n)
+    parts.append(style_for(d) + ch + "#[default]")
+
+print("".join(parts), end="")

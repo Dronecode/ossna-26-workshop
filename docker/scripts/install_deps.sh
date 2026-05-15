@@ -39,7 +39,8 @@ ${SUDO} apt-get install -y --no-install-recommends \
     ros-humble-gps-msgs \
     ros-humble-vision-msgs \
     libgflags-dev \
-    python3-rospkg 
+    python3-rospkg \
+    tmux
 
 ${SUDO} rm -rf /var/lib/apt/lists/*
 ${SUDO} apt-get clean
