@@ -97,6 +97,20 @@ tmux set -g status-right "#[fg=#6272a4]┤ #(workshop-spinner) #[fg=#8be9fd,bold
 # Make the prefix indicator obvious when prefix is held
 tmux set -g status-keys vi
 
+# --- Easy-to-reach shortcuts (NO PREFIX needed) -----------------------------
+# Some terminals (notably VSCode's built-in one) eat tmux's mouse events or
+# block Ctrl-b. Bind a few common navigations to bare Alt-something so they
+# work everywhere.
+tmux bind -n M-1     select-window -t 0           # Alt+1 -> sim window
+tmux bind -n M-2     select-window -t 1           # Alt+2 -> scratch window
+tmux bind -n M-Left  previous-window              # Alt+Left -> prev window
+tmux bind -n M-Right next-window                  # Alt+Right -> next window
+tmux bind -n M-h     select-pane -L               # Alt+h/j/k/l -> move pane
+tmux bind -n M-j     select-pane -D
+tmux bind -n M-k     select-pane -U
+tmux bind -n M-l     select-pane -R
+tmux bind -n M-z     resize-pane -Z               # Alt+z toggles pane zoom
+
 # Build the 5-pane layout described in the header comment. Use stable
 # pane IDs (#{pane_id}, %0/%1/...) instead of numeric pane_index because
 # tmux re-numbers pane_index in reading order whenever the layout
