@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+# workshop-hint TOPIC — print a short colored hint card for one of the
+# workshop tmux panes. Used from workshop-tmux.sh so each pane's seed is
+# one short, quote-safe command (`workshop-hint gazebo`, etc.) instead of
+# a long multi-line printf that races with the freshly-spawned shell.
+#
+# TOPIC is one of: gazebo, px4, qgc, common, example.
+
+import sys
+
+# Dracula-ish ANSI 256-colour indices, matched to the tmux theme.
+PINK   = "\x1b[38;5;213m"
+CYAN   = "\x1b[38;5;87m"
+GREEN  = "\x1b[38;5;156m"
+DIM    = "\x1b[38;5;245m"
+BOLD   = "\x1b[1m"
+RESET  = "\x1b[0m"
+
+
+def card(title: str, blurb: str, commands: list[str]) -> str:
+    out = []
+    out.append(f"{PINK}{BOLD}▙▟ {title} ▙▟{RESET}")
+    out.append(f"{DIM}{blurb}{RESET}")
+    for c in commands:
+        out.append(f"{CYAN}  {c}{RESET}")
+    return "\n".join(out)
+
+
+HINTS = {
+    "gazebo": card(
+        "Gazebo Harmonic",
+        "Spawn the physics world. Paste:",
+        [
+            "python3 /home/ubuntu/PX4-gazebo-models/simulation-gazebo \\",
+            "  --model_store /home/ubuntu/PX4-gazebo-models/ --world default",
+        ],
+    ),
+    "px4": card(
+        "PX4 v1.16 SITL",
+        "Once Gazebo is up, paste (4001 = x500):",
+        [
+            "PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 \\",
+            "  PX4_PARAM_UXRCE_DDS_SYNCT=0 \\",
+            "  /home/ubuntu/px4_sitl/bin/px4 -w /home/ubuntu/px4_sitl/romfs",
+        ],
+    ),
+    "qgc": card(
+        "QGroundControl v5.0.8",
+        "Needs an X11-enabled container (default for ./docker/docker_run.sh).",
+        ["/home/ubuntu/QGroundControl/qgroundcontrol"],
+    ),
+    "common": card(
+        "ROS 2 :: common.launch.py",
+        "XRCE-DDS agent + clock/foxglove bridges + robot_state_publisher + px4_tf + static TF:",
+        ["ros2 launch px4_ossna_26 common.launch.py"],
+    ),
+    "example": card(
+        "ROS 2 :: example launch",
+        "Pick ONE once common.launch.py is up:",
+        [
+            "ros2 launch offboard_demo offboard_demo.launch.py",
+            "ros2 launch custom_mode_demo custom_mode_demo.launch.py",
+            "ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0",
+            "ros2 launch teleop teleop.launch.py",
+            "ros2 run   precision_land precision_land --ros-args -p use_sim_time:=true",
+            "ros2 launch precision_land_executor precision_land_executor.launch.py",
+        ],
+    ),
+}
+
+topic = sys.argv[1] if len(sys.argv) > 1 else ""
+text = HINTS.get(topic)
+if text is None:
+    sys.stderr.write(f"workshop-hint: unknown topic {topic!r}; "
+                     f"expected one of {', '.join(HINTS)}\n")
+    sys.exit(2)
+print(text)

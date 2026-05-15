@@ -38,5 +38,6 @@ line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b arrow{RESET}          move focus between 
 line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b z{RESET}              zoom the current pane to full screen (toggle)")
 line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b \"{RESET}  /  {CYAN}Ctrl-b %{RESET}  split horizontally / vertically")
 line(f"  {DIM}│{RESET}  {CYAN}Ctrl-b d{RESET}              detach (sim keeps running); reattach with `workshop-tmux`")
+line(f"  {DIM}│{RESET}  {YELLOW}Shift+drag{RESET}            copy text out of any pane (bypasses tmux mouse capture)")
 line(f"  {DIM}└─────────────────────────────────────────────────────────────────────────────{RESET}")
 line("")
