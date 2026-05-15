@@ -43,13 +43,20 @@ tmux new-session -d -s "${SESSION}" -n sim
 
 # --- Friendlier defaults ---
 tmux set -g pane-border-status top
-tmux set -g mouse on
 tmux set -g history-limit 20000
 tmux setw -g mode-keys vi
 tmux set -g status-interval 1                # refresh status bar (and animations) every second
 tmux set -g default-terminal "tmux-256color" # opt into 256/truecolor where supported
 tmux set -ga terminal-overrides ",xterm-256color:Tc"   # tell tmux the outer terminal is true-color
 tmux set -g pane-border-lines heavy          # thicker borders on tmux 3.2+
+
+# NOTE: mouse mode is deliberately OFF.
+# With `mouse on`, tmux captures click-drag and you cannot select text with
+# the mouse in the usual terminal way. Leaving it off lets attendees use
+# their terminal's native click-drag → copy. The trade-off is no click-to-
+# focus on panes — use Ctrl-b arrow / `Ctrl-b q <n>` to switch panes
+# instead. Enable per-session with `tmux set mouse on` if you prefer.
+tmux set -g mouse off
 
 # --- Dracula-inspired palette (synthwave-y, dev-friendly) ---
 #   bg     #282a36   bg-dark  #13111c
@@ -120,44 +127,41 @@ tmux select-pane -t "${QGC_PANE}"     -T "qgc"
 tmux select-pane -t "${COMMON_PANE}"  -T "ros2 common.launch.py"
 tmux select-pane -t "${EXAMPLE_PANE}" -T "ros2 example launch"
 
-# Seed each pane with hint comments. The shell sees these as no-op
-# comments, they just remind the attendee what to paste where.
-tmux send-keys -t "${GZ_PANE}" \
-    "#  ▙▟ Gazebo Harmonic ▙▟" Enter \
-    "#  Spawn the physics world. Paste:" Enter \
-    "#    python3 /home/ubuntu/PX4-gazebo-models/simulation-gazebo \\" Enter \
-    "#      --model_store /home/ubuntu/PX4-gazebo-models/ --world default" Enter
+# Seed each pane with a single hint. We use `clear; printf` (one command)
+# rather than a sequence of `send-keys ... Enter ... Enter ...` so the
+# pane shows ONE shell prompt at the end instead of one prompt per line.
+# The pink/cyan ANSI escapes pick up the same Dracula palette as the rest
+# of the session.
+seed() {
+    local target="$1"
+    local payload="$2"
+    tmux send-keys -t "${target}" "clear; printf '${payload}'" Enter
+}
 
-tmux send-keys -t "${PX4_PANE}" \
-    "#  ▙▟ PX4 v1.16 SITL ▙▟" Enter \
-    "#  Once Gazebo is up, paste (4001 = x500):" Enter \
-    "#    PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 \\" Enter \
-    "#      PX4_PARAM_UXRCE_DDS_SYNCT=0 \\" Enter \
-    "#      /home/ubuntu/px4_sitl/bin/px4 -w /home/ubuntu/px4_sitl/romfs" Enter
+# %s escapes: \\033 (ESC), \\n (newline). The whole string is single-quoted
+# inside the seed() call so bash does not interpret anything.
+seed "${GZ_PANE}" \
+'\033[38;5;213m▙▟ Gazebo Harmonic ▙▟\033[0m\n\033[38;5;245mSpawn the physics world. Paste:\033[0m\n\033[38;5;87m  python3 /home/ubuntu/PX4-gazebo-models/simulation-gazebo \\\n    --model_store /home/ubuntu/PX4-gazebo-models/ --world default\033[0m\n'
 
-tmux send-keys -t "${QGC_PANE}" \
-    "#  ▙▟ QGroundControl v5.0.8 ▙▟" Enter \
-    "#  Needs an X11-enabled container (default for ./docker/docker_run.sh)." Enter \
-    "#    /home/ubuntu/QGroundControl/qgroundcontrol" Enter
+seed "${PX4_PANE}" \
+'\033[38;5;213m▙▟ PX4 v1.16 SITL ▙▟\033[0m\n\033[38;5;245mOnce Gazebo is up, paste (4001 = x500):\033[0m\n\033[38;5;87m  PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 \\\n    PX4_PARAM_UXRCE_DDS_SYNCT=0 \\\n    /home/ubuntu/px4_sitl/bin/px4 -w /home/ubuntu/px4_sitl/romfs\033[0m\n'
 
-tmux send-keys -t "${COMMON_PANE}" \
-    "#  ▙▟ ROS 2 :: common.launch.py ▙▟" Enter \
-    "#  XRCE-DDS agent + clock/foxglove bridges + robot_state_publisher + px4_tf + static TF:" Enter \
-    "#    ros2 launch px4_ossna_26 common.launch.py" Enter
+seed "${QGC_PANE}" \
+'\033[38;5;213m▙▟ QGroundControl v5.0.8 ▙▟\033[0m\n\033[38;5;245mNeeds an X11-enabled container (default for ./docker/docker_run.sh).\033[0m\n\033[38;5;87m  /home/ubuntu/QGroundControl/qgroundcontrol\033[0m\n'
 
-tmux send-keys -t "${EXAMPLE_PANE}" \
-    "#  ▙▟ ROS 2 :: example launch ▙▟" Enter \
-    "#  Pick ONE once common.launch.py is up:" Enter \
-    "#    ros2 launch offboard_demo offboard_demo.launch.py" Enter \
-    "#    ros2 launch custom_mode_demo custom_mode_demo.launch.py" Enter \
-    "#    ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0" Enter \
-    "#    ros2 launch teleop teleop.launch.py" Enter \
-    "#    ros2 run   precision_land precision_land --ros-args -p use_sim_time:=true" Enter \
-    "#    ros2 launch precision_land_executor precision_land_executor.launch.py" Enter
+seed "${COMMON_PANE}" \
+'\033[38;5;213m▙▟ ROS 2 :: common.launch.py ▙▟\033[0m\n\033[38;5;245mXRCE-DDS agent + clock/foxglove bridges + robot_state_publisher + px4_tf + static TF:\033[0m\n\033[38;5;87m  ros2 launch px4_ossna_26 common.launch.py\033[0m\n'
 
-# Scratch window: small welcome banner (Tux + tech stack + tmux cheat sheet).
+seed "${EXAMPLE_PANE}" \
+'\033[38;5;213m▙▟ ROS 2 :: example launch ▙▟\033[0m\n\033[38;5;245mPick ONE once common.launch.py is up:\033[0m\n\033[38;5;87m  ros2 launch offboard_demo offboard_demo.launch.py\n  ros2 launch custom_mode_demo custom_mode_demo.launch.py\n  ros2 launch aruco_tracker aruco_tracker.launch.py world_name:=aruco model_name:=x500_mono_cam_down_0\n  ros2 launch teleop teleop.launch.py\n  ros2 run   precision_land precision_land --ros-args -p use_sim_time:=true\n  ros2 launch precision_land_executor precision_land_executor.launch.py\033[0m\n'
+
+# Scratch window: title it so the pane-border-format does not render the
+# default (container hostname); the welcome banner is the first thing
+# attendees see when they switch to this window with Ctrl-b 1.
 tmux new-window -t "${SESSION}" -n scratch
-tmux send-keys -t "${SESSION}:scratch" "clear; workshop-welcome 2>/dev/null || true" Enter
+SCRATCH_PANE="$(tmux display-message -p -t "${SESSION}:scratch" '#{pane_id}')"
+tmux select-pane -t "${SCRATCH_PANE}" -T "scratch"
+tmux send-keys -t "${SCRATCH_PANE}" "clear; workshop-welcome 2>/dev/null || true" Enter
 
 # Focus the first pane and attach.
 tmux select-window -t "${SESSION}:sim"
